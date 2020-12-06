@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from .forms import EmailPostForm
 from .models import Post
 
 def post_list(request):
@@ -40,3 +41,20 @@ class PostListView(ListView):
 
     # path('', views.PostListView.as_view(), name='post_list')
     # {% include "pagination.html" with page=page_obj %}
+
+def post_share(request, post_id):
+    ''' Handles the form and sends an email when it's successfully submitted.'''
+    # Retrieve post by id
+    post = get_object_or_404(Post, id=post_id, status='published')
+    if request.method == 'POST':
+        # Form was submitted using POST
+        form = EmailPostForm(request.POST) # creates an object of the class we defined
+        # in the forms file with the request.POST data
+        if form.is_valid():
+            # Form fields passed the validation
+            cd = form.cleaned_data # a dictionary of form fields and the their values
+            # send the email
+    else: # Form was not submitted using POST so we display an empty Form
+        form = EmailPostForm()
+    return render(request, 'blog/post/share.html', {'post': post, 
+                                                        'form': form})
