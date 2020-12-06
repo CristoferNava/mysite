@@ -107,3 +107,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# if we can't use an SMTP, we can use the Python Shell
+# check page 43 for using Gmail
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

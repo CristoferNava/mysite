@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.core.mail import send_mail
 from .forms import EmailPostForm
 from .models import Post
 
@@ -46,6 +47,7 @@ def post_share(request, post_id):
     ''' Handles the form and sends an email when it's successfully submitted.'''
     # Retrieve post by id
     post = get_object_or_404(Post, id=post_id, status='published')
+    sent = False
     if request.method == 'POST':
         # Form was submitted using POST
         form = EmailPostForm(request.POST) # creates an object of the class we defined
@@ -53,8 +55,16 @@ def post_share(request, post_id):
         if form.is_valid():
             # Form fields passed the validation
             cd = form.cleaned_data # a dictionary of form fields and the their values
-            # send the email
+            post_url = request.build_absolute_uri(post.get_absolute_url())
+            # post_url build a complete URL, including the HTTP schema and hostname
+            subject = f"{cd['name']} recommends you read " \
+                      f"{post.title}"
+            message = f"Read {post.title} at {post_url}\n\n" \
+                      f"{cd['name']}\'s comments: {cd['comments']}"
+            send_mail(subject, message, 'admin@myblog.com', [cd['to']])
+            sent = True
     else: # Form was not submitted using POST so we display an empty Form
         form = EmailPostForm()
-    return render(request, 'blog/post/share.html', {'post': post, 
-                                                        'form': form})
+    return render(request, 'blog/post/share.html', {'post': post,     
+                                                    'form': form,
+                                                    'sent': sent,})
