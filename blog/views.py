@@ -1,12 +1,18 @@
 from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.core.mail import send_mail
+from taggit.models import Tag
 from .forms import EmailPostForm, CommentForm
 from .models import Post, Comment
 
-def post_list(request):
+def post_list(request, tag_slug=None):
     # adding the paginator
     object_list = Post.published.all()
+    tag = None
+    if tag_slug:
+        tag = get_object_or_404(Tag, slug=tag_slug)
+        object_list = object_list.filter(tags__in=[tag])
+        # we use the __in field lookup
     paginator = Paginator(object_list, 3) # 3 posts in each page
     page = request.GET.get('page') # indicates the current page number
     try:
@@ -18,7 +24,8 @@ def post_list(request):
         # If page is out of range deliver last page of results
         posts = paginator.page(paginator.num_pages)
     return render(request, 'blog/post/list.html', {'posts': posts,
-                                                   'page': page})
+                                                   'page': page,
+                                                   'tag': tag,})
 
 def post_detail(request, year, month, day, post):
     # this function retrieves the object that matches the given parameters or an

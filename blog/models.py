@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
 from django.urls import reverse
+from taggit.managers import TaggableManager
 
 # Each Django model has a least one manager to handle the data base, the default
 # manager is called objects. 
@@ -42,6 +43,7 @@ class Post(models.Model):
 
     objects = models.Manager() # the default manager
     published = PublishedManager() # Our custom manager.
+    tags = TaggableManager()
 
     # get_absolute_url use to return a cononical URL for the object.
     # the reverse() method build URLs by their name and pass optional parameters
