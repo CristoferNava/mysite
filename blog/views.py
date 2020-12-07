@@ -5,6 +5,18 @@ from taggit.models import Tag
 from .forms import EmailPostForm, CommentForm
 from .models import Post, Comment
 
+# we can add a feature where a user reads a post, we can suggest to them that they
+# read other realted posts:
+# 1. Retrieve all the tags for the current post
+# 2. Get all posts that are tagged with any of those tags
+# 3. Exclude the current post from that list to avoid recommending the same post
+# 4. Order the results by the number of tags shared with the current post
+# 5. In the case of two or more posts with the same number of tags, recommend the mos recent post
+# 6. Limit the query to the number of posts you want to recommend
+from django.db.models import Count
+# this is the Count aggregation function of the Django ORM.
+# also we have avg, max, min
+
 def post_list(request, tag_slug=None):
     # adding the paginator
     object_list = Post.published.all()
@@ -51,10 +63,24 @@ def post_detail(request, year, month, day, post):
             new_comment.save()
     else:
         comment_form = CommentForm()
+
+    # List of similar posts
+    post_tags_ids = post.tags.values_list('id', flat=True)
+    # the values_list() returns tuples with the values for the given fields.
+    # we pass flat=True to it to get single values such as [1, 2, 3, ...] instead
+    # of one-tuples such as [(1,), (2,), (3,) ...].
+    similar_posts = Post.published.filter(tags__in=post_tags_ids)\
+                                  .exclude(id=post.id)
+    similar_posts = similar_posts.annotate(same_tags=Count('tags'))\
+                                 .order_by('-same_tags', '-publish')[:4]
+    # we use the Count aggregation function to generate a calculated field **same_tags**
+    # that contains the number of tags shared with all the tags queried.
+
     return render(request, 'blog/post/detail.html', {'post': post,
                                                      'comments': comments,
                                                      'new_comment': new_comment,
-                                                     'comment_form': comment_form,})
+                                                     'comment_form': comment_form,
+                                                     'similar_posts': similar_posts,})
 
 # we can write the post_list view as class-based view to use the generic ListView
 # this base view allows us to list objects of any kind
